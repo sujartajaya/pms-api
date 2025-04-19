@@ -1,0 +1,70 @@
+services:
+  mysql:
+    image: mysql:latest
+    container_name: mysql-newline
+    working_dir: /home
+    volumes:
+      - ./mysql/dbconfig:/home
+      - ./mysql/data:/var/lib/mysql
+    environment:
+      TZ: "Asia/Makassar"
+      MYSQL_ROOT_PASSWORD: newline123
+    restart: unless-stopped
+    networks:
+      - localnet
+
+  php:
+    build:
+      args:
+        user: newline
+        uid: 1000
+      context: ./php
+      dockerfile: Dockerfile
+    image: php-newline-image
+    container_name: php-newline
+    restart: unless-stopped
+    working_dir: /var/www/
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: newline123
+      DB_NAME: newline
+      DB_PORT: 3306
+      DB_CONNECTION_LIMIT: 10
+      TZ: "Asia/Makassar"
+    volumes:
+      - ./laravel/src:/var/www
+      - ./nginx:/etc/nginx/conf.d/
+    networks:
+      - localnet
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: phpadmin-newline
+    restart: always
+    ports:
+      - 8090:80
+    environment:
+      - PMA_HOST=mysql
+      - TZ=Asia/Makassar
+    networks:
+      - localnet
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-newline
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Makassar
+    ports:
+      - 8080:80
+      - 8443:443
+    volumes:
+      - ./laravel/src:/var/www
+      - ./nginx:/etc/nginx/conf.d/
+    networks:
+      - localnet
+
+networks:
+  localnet:
+    driver: bridge
